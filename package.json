@@ -49,7 +49,7 @@
     "url": "https://github.com/lsegal/atom-runner/issues"
   },
   "dependencies": {
-    "ansi-to-html": "0.1.x",
+    "ansi-to-html": "^0.1.1",
     "atom-space-pen-views": "^2.0.3"
   },
   "description": "Runs scripts inside of Atom.",

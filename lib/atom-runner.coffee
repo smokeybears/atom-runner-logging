@@ -4,9 +4,10 @@ spawn = require('child_process').spawn
 fs = require('fs')
 url = require('url')
 p = require('path')
+AnsiToHTML = require('ansi-to-HTML')
 createLog = require('./logger')
 AtomRunnerView = require './atom-runner-view'
-
+ansiToHTML = new AnsiToHTML()
 class AtomRunner
   config:
     showOutputWindow:
@@ -79,17 +80,25 @@ class AtomRunner
       @extensionMap = atom.config.get(@cfg.ext)
     atom.config.observe @cfg.scope, =>
       @scopeMap = atom.config.get(@cfg.scope)
-    atom.commands.add 'atom-workspace', 'run:file', => @run(false)
-    atom.commands.add 'atom-workspace', 'run:selection', => @run(true)
+    atom.commands.add 'atom-workspace', 'run:file', => @getEditor(false).then(@run.bind(this))
+    atom.commands.add 'atom-workspace', 'run:selection', => @getEditor(true).then(@run.bind(this))
     atom.commands.add 'atom-workspace', 'run:stop', => @stop()
     atom.commands.add 'atom-workspace', 'run:close', => @stopAndClose()
     atom.commands.add '.atom-runner', 'run:copy', =>
       atom.clipboard.write(window.getSelection().toString())
 
-  run: (selection) ->
-    editor = atom.workspace.getActiveTextEditor()
-    return unless editor?
+  getEditor: (test) ->
+    if test
+      for file in fs.readdirSync(p.dirname(atom.workspace.getActiveTextEditor().getPath()))
+        if /.+\.spec\..+/.exec(file)
+          file = /.+\.spec\..+/.exec(file).input
+      return atom.workspace.open(p.dirname(atom.workspace.getActiveTextEditor().getPath()) + '/' + file, {activatePane: false, activateItem: false})
+    else
+      return Promise.resolve(atom.workspace.getActiveTextEditor())
 
+  run: (editor) ->
+    return unless editor?
+    selection = false
     path = editor.getPath()
     cmd = @commandFor(editor, selection)
     unless cmd?
